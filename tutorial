@@ -1,0 +1,141 @@
+#Обновленная версию гайда от AGx10k
+
+#####Solana-TdS
+
+#### меняем дефолтный порт ssh на рандом
+port=$(shuf -i 10000-65000 -n 1) && echo port=$port && read -p 'please write ^^^ down your new SSH port!!!!
+sed 's/#Port 22/Port '$port'/g' -i /etc/ssh/sshd_config && systemctl restart ssh && netstat -tanp | grep LISTEN
+
+### дефолтные пакеты под всё подряд
+apt-get -yq update && apt-get -yq install screen mc htop strace  wget curl git unzip etckeeper tmux psmisc dnsutils bc jq lynx ntp net-tools software-properties-common wget whois pciutils curl lsof vim gawk rsync sudo build-essential netcat-openbsd pv ethtool file
+
+### sys-info scripts from hetzner
+wget https://gist.githubusercontent.com/AGx10k/bebd6297c7d8a8bd856a55ad2f2393a5/raw/b42b5d9d3edc2c9be1fe36d1518f4a68eb46f2ad/hwdata.sh -O ~/hwdata.sh && chmod +x ~/hwdata.sh
+wget https://gist.githubusercontent.com/AGx10k/bebd6297c7d8a8bd856a55ad2f2393a5/raw/c72fe59642c34622b8014a4888bcf9734197815c/netdata.sh -O netdata.sh && chmod +x ~/netdata.sh
+
+echo "/root/hwdata.sh && /root/netdata.sh" >> ~/.profile
+
+### node-exporter allow from main prometheus server only 
+#iptables -I INPUT -p tcp --dport 9100 ! --source prometheus-host-ip -j DROP
+#apt -yq install prometheus-node-exporter
+
+
+### install latest testnet release. 
+### Тут сначала узнаем актуальную версию соланы и заменяем последний параметр (v1.2.22 в следующей строке)
+curl -sSf https://raw.githubusercontent.com/solana-labs/solana/v1.1.9/install/solana-install-init.sh | sh -s - v1.2.22
+
+export PATH="/root/.local/share/solana/install/active_release/bin:$PATH"
+
+
+### exclude solana-validator from rsyslog
+echo 'if $programname == "solana-validator" then stop' > /etc/rsyslog.d/01-solana-remove.conf && systemctl restart rsyslog
+
+# service file
+### Важно! Данный файл может меняться со временем, уточнить актуальную версию!
+wget https://raw.githubusercontent.com/sideEffect117/solana/master/service -O /etc/systemd/system/solana.service
+chmod 0644 /etc/systemd/system/solana.service
+systemctl daemon-reload
+systemctl enable solana.service 
+
+### https://docs.solana.com/running-validator/validator-monitor#timezone-for-log-messages
+ln -sf /usr/share/zoneinfo/America/Los_Angeles /etc/localtime
+
+
+mkdir /root/solana
+cd /root/solana
+
+### generate identity - это уже сделали во время подачи заявки
+###solana-keygen new --outfile ./validator-keypair.json
+###cat validator-keypair.json &&echo
+
+### создаём файл с ключом, который генерировали до этого
+touch validator-keypair.json && chmod 0600 validator-keypair.json && echo edit validator-keypair.json && sleep 5 && nano validator-keypair.json
+
+
+solana config set --url http://testnet.solana.com  --keypair /root/solana/validator-keypair.json
+
+solana balance
+
+#### 10 сек смотрим на логи и потом ctrl-c
+solana-gossip spy --entrypoint testnet.solana.com:8001 
+
+
+
+###create vote account ->>> https://docs.solana.com/running-validator/validator-start#create-vote-account
+solana-keygen new -o /root/solana/vote-account-keypair.json
+
+### делаем резервную копию
+cat vote-account-keypair.json &&echo
+
+### create account on blockchain
+solana create-vote-account /root/solana/vote-account-keypair.json /root/solana/validator-keypair.json
+
+### по результатам предыдущей команды должен быть примерно такой вывод:
+#Signature: длиииииннный хэш транзакции
+
+# проверить
+solana vote-account  /root/solana/vote-account-keypair.json 
+
+### должно быть что-то в этом роде - 3 раза должен быть показан pubkey основной
+# Account Balance: 0.02685864 SOL
+# Validator Identity: <YOUR_pubkey>
+# Authorized Voters: {43: "<YOUR_pubkey>"}
+# Authorized Withdrawer: <YOUR_pubkey>
+# Credits: 0
+# Commission: 100%
+# Root Slot: ~
+# Recent Timestamp: BlockTimestamp { slot: 0, timestamp: 0 }
+
+
+systemctl start solana
+
+#### 20 секунд смотрим на экран и потом ctrl-c
+journalctl -u solana -f
+
+### Ждем минут пять перед выполнением следующей команды
+while true; do echo sleep 15 and try catchup; sleep 15; solana catchup /root/solana/validator-keypair.json ; done
+
+# После выполнения предыдущей команды мы должны видеть, как нода синкается (пишет %n slots behind). Если вместо этого видим "RPC service not found", значит что-то не так.
+Варианты:
+1) Попробовать отредактировать файл сервиса (nano /etc/systemd/system/solana.service) и убрать оттуда две строки 
+  --private-rpc \
+  --rpc-bind-address localhost \
+Затем: 
+systemctl daemon-reload
+systemctl restart solana
+
+Затем снова ждем минут пять и 
+solana catchup /root/solana/validator-keypair.json
+
+2) Проверить настройки фаервола на предмет нужных портов
+3) Выполнить 
+  echo vm.max_map_count=262144 >> /etc/sysctl.conf
+  sysctl -p
+  systemctl daemon-reload
+  systemctl restart solana
+
+### create stake keypair - https://docs.solana.com/running-validator/validator-stake#create-stake-keypair
+solana-keygen new -o /root/solana/validator-stake-keypair.json
+
+### бэкапим
+cat validator-stake-keypair.json &&echo
+
+### delegate
+solana create-stake-account /root/solana/validator-stake-keypair.json 1
+
+solana delegate-stake /root/solana/validator-stake-keypair.json /root/solana/vote-account-keypair.json 
+
+### view your vote account:
+solana vote-account /root/solana/vote-account-keypair.json
+
+###View your stake account, the delegation preference and details of your stake:
+solana stake-account /root/solana/validator-stake-keypair.json
+
+solana validators
+
+### publish info about validator
+solana validator-info publish "<some name that will show up in explorer>" -n <keybase_username> -w "<website>"
+### example:
+###solana validator-info publish "Elvis Validator" -n elvis -w "https://elvis-validates.com"
+###solana validator-info publish "Elvis Validator" -n elvis
+###solana validator-info publish "Elvis Validator" 
