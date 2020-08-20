@@ -2,8 +2,8 @@
 
 #####Solana-TdS
 
-#### меняем дефолтный порт ssh на рандом
-port=$(shuf -i 10000-65000 -n 1) && echo port=$port && read -p 'please write ^^^ down your new SSH port!!!!
+#### меняем дефолтный порт ssh на рандом (Необязательный пункт. Обязательно запоминаем этот рандомный порт для будущих подключений по SSH!)
+port=$(shuf -i 10000-65000 -n 1) && echo port=$port && read -p 
 sed 's/#Port 22/Port '$port'/g' -i /etc/ssh/sshd_config && systemctl restart ssh && netstat -tanp | grep LISTEN
 
 ### дефолтные пакеты под всё подряд
