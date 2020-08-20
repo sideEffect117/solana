@@ -21,7 +21,7 @@ echo "/root/hwdata.sh && /root/netdata.sh" >> ~/.profile
 
 
 ### install latest testnet release. 
-### Тут сначала узнаем актуальную версию соланы и заменяем последний параметр (v1.2.22 в следующей строке)
+### Тут сначала узнаем актуальную версию соланы и заменяем последний параметр (v1.3.3 в следующей строке)
 curl -sSf https://raw.githubusercontent.com/solana-labs/solana/v1.1.9/install/solana-install-init.sh | sh -s - v1.3.3
 
 export PATH="/root/.local/share/solana/install/active_release/bin:$PATH"
