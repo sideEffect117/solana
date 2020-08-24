@@ -170,8 +170,11 @@ touch validator-keypair.json && chmod 0600 validator-keypair.json && echo edit v
 touch vote-account-keypair.json && chmod 0600 vote-account-keypair.json && echo edit vote-account-keypair.json && sleep 5 && nano vote-account-keypair.json
 touch validator-stake-keypair.json && chmod 0600 validator-stake-keypair.json && echo edit validator-stake-keypair.json && sleep 5 && nano validator-stake-keypair.json
 
+# Запускаем:
+systemctl start solana
+
 # Проверяем, синкается ли нода:
 solana catchup /root/solana/validator-keypair.json
 
-Если нет, см. пункт с решением этой проблемы выше в данном руководстве
+Если нет, см. пункт с решением этой проблемы выше в данном руководстве.
 
