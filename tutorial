@@ -44,6 +44,8 @@ ln -sf /usr/share/zoneinfo/America/Los_Angeles /etc/localtime
 mkdir /root/solana
 cd /root/solana
 
+#Если переносим уже работающую ноду на другой сервер, отсюда см. конец гайда
+
 ### generate identity - это уже сделали во время подачи заявки
 ###solana-keygen new --outfile ./validator-keypair.json
 ###cat validator-keypair.json &&echo
@@ -153,3 +155,23 @@ solana-install init 1.3.3
 ### И потом перезагружаем Солану. 
 ### Если у вас запущено через службу то так: sudo systemctl restart solana
 ### Если в screen \ tmux, то просто останавливаем и запускаем снова
+
+
+### Перенос ноды на другой сервер:
+
+# Стопаем ноду на старом сервере
+systemctl stop solana
+
+# Дальше два варианта. Либо переносим файлы ключей через фтп-менеджер:
+а) Например Filezilla, подключаемся с реквизитами как для ssh и копипастим файлы validator-keypair.json, validator-stake-keypair.json, vote-account-keypair.json в папку /root/solana)
+
+б) Делаем все через командную строку и копипастим непосредственно содержимое файлов:
+touch validator-keypair.json && chmod 0600 validator-keypair.json && echo edit validator-keypair.json && sleep 5 && nano validator-keypair.json
+touch vote-account-keypair.json && chmod 0600 vote-account-keypair.json && echo edit vote-account-keypair.json && sleep 5 && nano vote-account-keypair.json
+touch validator-stake-keypair.json && chmod 0600 validator-stake-keypair.json && echo edit validator-stake-keypair.json && sleep 5 && nano validator-stake-keypair.json
+
+# Проверяем, синкается ли нода:
+solana catchup /root/solana/validator-keypair.json
+
+Если нет, см. пункт с решением этой проблемы выше в данном руководстве
+
