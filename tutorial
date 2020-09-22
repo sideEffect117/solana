@@ -32,7 +32,7 @@ echo 'if $programname == "solana-validator" then stop' > /etc/rsyslog.d/01-solan
 
 # service file
 ### ВАЖНО! Данный файл может меняться со временем, уточнить актуальную версию перед запуском!
-wget https://raw.githubusercontent.com/sideEffect117/solana/master/service -O /etc/systemd/system/solana.service
+wget https://raw.githubusercontent.com/c29r3/solana-utils/master/solana-tds.service -O /etc/systemd/system/solana.service
 chmod 0644 /etc/systemd/system/solana.service
 systemctl daemon-reload
 systemctl enable solana.service 
@@ -110,13 +110,32 @@ systemctl restart solana
 solana catchup /root/solana/validator-keypair.json
 
 2) Выполнить 
-  echo vm.max_map_count=262144 >> /etc/sysctl.conf
+  echo vm.max_map_count=700000 >> /etc/sysctl.conf
   sysctl -p
   systemctl daemon-reload
   systemctl restart solana
   solana catchup /root/solana/validator-keypair.json
   
 3) Проверить настройки фаервола на предмет нужных портов
+
+4) Решение для тех у кого ulimit не применяется в Ubuntu через /etc/security/limits.conf:
+
+  https://superuser.com/questions/1200539/cannot-increase-open-file-limit-past-4096-ubuntu
+  1. Добавляем сюда /etc/security/limits.conf:
+  * soft     nproc          1000000
+  * hard     nproc          1000000
+  * soft     nofile         1000000
+  * hard     nofile         1000000
+  root soft     nproc          1000000
+  root hard     nproc          1000000
+  root soft     nofile         1000000
+  root hard     nofile         1000000
+
+  2. В этих конфигах поменять DefaultLimitNOFILE=1000000
+  /etc/systemd/system.conf
+  /etc/systemd/user.conf
+
+  3. Ребутаем (рабочего решения без ребута не найдено)
 
 ### Если все в порядке, едем дальше. (https://tourdesol.solanabeach.io/#/ Ищем тут себя в списке валидоторов по первым буквам кошелька)
 ### create stake keypair - https://docs.solana.com/running-validator/validator-stake#create-stake-keypair
