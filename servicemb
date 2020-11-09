@@ -1,0 +1,31 @@
+[Unit]
+Description=Solana mainnet
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+LimitNOFILE=500000
+Environment="SOLANA_METRICS_CONFIG='host=https://metrics.solana.com:8086,p=dry_run'"
+ExecStart=/root/.local/share/solana/install/active_release/bin/solana-validator \
+--entrypoint mainnet-beta.solana.com:8001 \
+--expected-bank-hash 8osXYbYF7drjZAJedHuwB8A56t7Pwa6bZbtCjiVhJBbT    \
+--trusted-validator 7Np41oeYqPefeNQEHSv1UDhYrehxin3NStELsSKCT4K2 \
+--trusted-validator GdnSyH3YtwcxFvQrVVJMm1JhTS4QVX7MFsX56uJLUfiZ \
+--trusted-validator DE1bawNcRJB9rVm3buyMVfr8mBEoyyu73NBovf2oXJsJ \
+--trusted-validator CakcnaRDHka2gXyfbEd2d3xsvkJkqsLw2akB3zsN1D2S \
+--no-untrusted-rpc \
+--expected-genesis-hash 5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d \
+--dynamic-port-range 8000-8020 \
+--limit-ledger-size 250000000000  \
+--wal-recovery-mode skip_any_corrupted_record \
+--identity /root/solana/validator-keypair.json        \
+--vote-account /root/solana/vote-account-keypair.json \
+--ledger /root/solana/validator-ledger \
+--rpc-port 8899 \
+--log -
+
+[Install]
+WantedBy=multi-user.target
