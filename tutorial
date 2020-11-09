@@ -32,6 +32,9 @@ echo 'if $programname == "solana-validator" then stop' > /etc/rsyslog.d/01-solan
 
 # service file
 ### ВАЖНО! Данный файл может меняться со временем, уточнить актуальную версию перед запуском!
+
+### Для Мainnet: wget https://raw.githubusercontent.com/sideEffect117/solana/master/servicemb -O /etc/systemd/system/solana.service
+
 wget https://raw.githubusercontent.com/c29r3/solana-utils/master/solana-tds.service -O /etc/systemd/system/solana.service
 chmod 0644 /etc/systemd/system/solana.service
 systemctl daemon-reload
@@ -53,6 +56,7 @@ cd /root/solana
 ### создаём файл с ключом, который генерировали до этого (копипастим содержимое)
 touch validator-keypair.json && chmod 0600 validator-keypair.json && echo edit validator-keypair.json && sleep 5 && nano validator-keypair.json
 
+### For Mainnet: solana config set --keypair /root/solana/validator-keypair.json
 
 solana config set --url http://testnet.solana.com  --keypair /root/solana/validator-keypair.json
 
@@ -138,6 +142,7 @@ solana catchup /root/solana/validator-keypair.json
   3. Ребутаем (рабочего решения без ребута не найдено)
 
 ### Если все в порядке, едем дальше. (https://tourdesol.solanabeach.io/#/ Ищем тут себя в списке валидоторов по первым буквам кошелька)
+### For Mainnet explorer: https://solanabeach.io/validators
 ### create stake keypair - https://docs.solana.com/running-validator/validator-stake#create-stake-keypair
 solana-keygen new -o /root/solana/validator-stake-keypair.json
 
